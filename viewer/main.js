@@ -25,6 +25,12 @@ import {
     createIcons
 } from 'lucide'
 
+// Tauri imports (check if we're running in Tauri)
+let tauriAPI = null;
+if (window.__TAURI__) {
+    tauriAPI = window.__TAURI__;
+}
+
 // Remove sampleBudget definition, always load local budget by default
 
 class BudgetViewer {

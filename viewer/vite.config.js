@@ -33,9 +33,15 @@ export default defineConfig({
         tailwindcss(),
         pbWatcher
     ],
+    build: {
+        outDir: 'dist',
+        emptyOutDir: true
+    },
     server: {
-        open: true,
+        open: false, // Don't auto-open browser since we're using Tauri
         host: true,
+        port: 1420, // Default Tauri dev server port
+        strictPort: true,
         watch: {
             usePolling: true,
             ignored: (path) => {
@@ -45,5 +51,6 @@ export default defineConfig({
                 return path.includes('node_modules')
             }
         }
-    }
+    },
+    clearScreen: false // Don't clear screen to preserve Tauri logs
 })
