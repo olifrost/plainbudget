@@ -9,8 +9,14 @@ export default defineConfig({
         open: true,
         host: true,
         watch: {
-            // Include .pb files in the watch list
-            ignored: ['!**/budget.pb', '!**/*.pb']
+            // Include .pb files in the watch list for hot reload
+            usePolling: true,
+            ignored: (path) => {
+                // Don't ignore .pb files
+                if (path.endsWith('.pb')) return false
+                // Use default ignore patterns for everything else
+                return path.includes('node_modules')
+            }
         }
     }
 })
