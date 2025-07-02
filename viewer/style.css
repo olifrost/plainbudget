@@ -66,4 +66,17 @@
   .toolbar-container {
     @apply max-w-xl mx-auto w-full flex flex-wrap items-center justify-center gap-4 mb-8;
   }
+
+  /* Icon styles */
+  .icon-container svg {
+    @apply w-full h-full;
+  }
+  
+  .budget-group-header .icon-container svg {
+    @apply w-6 h-6;
+  }
+  
+  .budget-row .icon-container svg {
+    @apply w-4 h-4;
+  }
 }

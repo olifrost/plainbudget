@@ -514,8 +514,8 @@ export class PlainBudget {
     }
 
     #round(value) {
-        // Round to 2 decimal places and remove trailing zeros
-        return Math.round(value * 100) / 100
+        // Round to nearest whole number for totals
+        return Math.round(value)
     }
 
     #getCleanLabel(line) {
