@@ -3,7 +3,7 @@
 
 # PlainBudget
 
-Minimalist plain text budgeting.
+Minimalist plain text budgeting, forked for additonal features like division and decimals
 
 [**Read the blog post.**](https://hire.jonasgalvez.com.br/2025/may/8/plainbudget)
 
@@ -24,7 +24,9 @@ Minimalist plain text budgeting.
 
 - **Groups** can be referenced in other groups or flows.
 
-- **Multipliers** can added to any referenced group or value.
+- **Multipliers** can be added to any referenced group or value using `x`.
+
+- **Dividers** can be added to any referenced group or value using `/`.
 
 - Blocks of text with invalid syntax will be ignored and remain intact in the source.
 
@@ -40,7 +42,7 @@ Minimalist plain text budgeting.
 
 ```
 = Main
-- 2000 Rent
+- 2000 Rent / 2
 - 1000 Utilities
 - 500 Leisure
 
@@ -64,8 +66,8 @@ Minimalist plain text budgeting.
 **Output**
 
 ```
-  = 3500 Main
-  - 2000 Rent
+  = 2500 Main
+  - 2000 Rent / 2
   - 1000 Utilities
   -  500 Leisure
   
@@ -79,9 +81,9 @@ Minimalist plain text budgeting.
   - 1000 Side hustle
   
   + 6000 Income
-  - 3500 Main
+  - 2500 Main
   -  360 Groceries
-  = 2140 
+  = 3140 
 ```
 
 </td>

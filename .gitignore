@@ -1,2 +1,6 @@
 .DS_Store
 node_modules
+budgets
+output
+viewer/subscriptions.pb
+viewer/budget.pb

@@ -1,0 +1,69 @@
+@import "tailwindcss";
+
+@layer base {
+  html {
+    font-feature-settings: "cv11", "ss01";
+  }
+}
+
+@layer components {
+  .budget-card {
+    @apply bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden max-w-xl mx-auto;
+  }
+  
+  .budget-header {
+    @apply bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-100 px-6 py-4;
+  }
+  
+  .budget-group-header {
+    @apply bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200;
+  }
+  
+  .budget-row {
+    @apply border-b border-gray-50 hover:bg-gray-50/50 transition-colors duration-150;
+  }
+  
+  .budget-row:last-child {
+    @apply border-b-0;
+  }
+  
+  .value-positive {
+    @apply text-emerald-600 font-semibold;
+  }
+  
+  .value-negative {
+    @apply text-red-500 font-semibold;
+  }
+  
+  .flow-positive {
+    @apply border-l-4
+  }
+  
+  .flow-negative {
+    @apply border-l-4 ;
+  }
+  
+  .flow-result {
+    @apply bg-blue-50 border-2 border-l-4;
+  }
+  
+  .stats-card {
+    @apply bg-white rounded-2xl shadow-lg border border-gray-100 p-6;
+  }
+  
+  .projection-item {
+    @apply flex justify-between items-center py-3 border-b border-gray-100 last:border-b-0;
+  }
+  
+  .distribution-bar {
+    @apply bg-gray-200 rounded-full h-2 overflow-hidden;
+  }
+  
+  .distribution-fill {
+    @apply bg-gradient-to-r from-blue-500 to-blue-600 h-full rounded-full transition-all duration-700 ease-out;
+  }
+  
+  .toolbar-container {
+    @apply max-w-xl mx-auto w-full flex flex-wrap items-center justify-center gap-4 mb-8;
+  }
+}

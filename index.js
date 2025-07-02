@@ -1,24 +1,24 @@
-
 export class PlainBudget {
-  MULTIPLIER_REGEX = /^(.*?)\s+x\s+(\d+)$/
+  MULTIPLIER_REGEX = /^(.*?)\s+x\s+(\d+(?:\.\d+)?)$/
+  DIVIDER_REGEX = /^(.*?)\s+\/\s+(\d+(?:\.\d+)?)$/
   COMPUTABLE_LINE_REGEX = /^[=\-~+x]\s+/
-  RESULT_LINE_REGEX = /^=\s+(\d+)\s*$/
-  VALUE_REGEX = /^\s+(\d+)/
-  LABEL_REGEX = /\s+\d+\s+(.+)/
+  RESULT_LINE_REGEX = /^=\s+(\d+(?:\.\d+)?)\s*$/
+  VALUE_REGEX = /^\s+(\d+(?:\.\d+)?)/
+  LABEL_REGEX = /\s+\d+(?:\.\d+)?\s+(.+)/
 
-  constructor (source, padding) {
+  constructor(source, padding) {
     this.source = source
     this.padding = padding ?? 3
     this.blocks = null
     this.raw = null
     this.ids = null
-    this.multipliers = null
+    this.modifiers = null
     this.computed = null
     this.index = null
     this.blocks = null
   }
 
-  process () {
+  process() {
     this.parse()
     const { order } = this.validate()
     for (const id of order) {
@@ -39,21 +39,21 @@ export class PlainBudget {
     }
   }
 
-  parse () {
+  parse() {
     this.raw = new WeakMap
     this.ids = new WeakMap
-    this.multipliers = new WeakMap
+    this.modifiers = new WeakMap
     this.computed = new Map
     this.index = new Map
     this.blocks = []
 
     const lines = this.source.split(/\r?\n/g)
-    
+
     let group = null
-    
+
     let op
     let line
-    
+
     let lineCount = lines.length
     let maxIter = lineCount - 1
     for (let i = 0; i < lineCount; i++) {
@@ -77,7 +77,7 @@ export class PlainBudget {
             this.blocks.push(...group.map(l => this.raw.get(l)))
             this.blocks.push(lines[i])
             group = null
-          } else  {
+          } else {
             group.push(parsed)
           }
         }
@@ -97,7 +97,7 @@ export class PlainBudget {
     }
   }
 
-  validate () {
+  validate() {
     const dupes = []
     for (const group of this.blocks) {
       if (!Array.isArray(group)) {
@@ -130,12 +130,14 @@ export class PlainBudget {
       for (const entry of group) {
         if (entry[0] === '=') {
           deps = new Map
-          graph.set(entry[2], deps)
+          const id = this.ids.get(entry)
+          graph.set(id, deps)
           continue
         }
         if (entry[1] === null) {
           if (deps) {
-            deps.set(entry[2], 1)
+            const entryId = this.ids.get(entry)
+            deps.set(entryId, 1)
           }
         }
       }
@@ -166,7 +168,7 @@ export class PlainBudget {
     return { order, invalid }
   }
 
-  compute (index) {
+  compute(index) {
     if (!Array.isArray(this.blocks[index])) {
       return
     }
@@ -184,7 +186,12 @@ export class PlainBudget {
         if (topOp[0] === 'x') {
           continue
         }
-        value += this.#processFlowEntry(topOp)
+        const lineValue = this.#processFlowEntry(topOp)
+        value += lineValue
+        // Update the line's value if it was modified
+        if (this.modifiers.get(topOp)) {
+          topOp[1] = lineValue
+        }
       }
     } else if (group[0][0] === '+') {
       if (typeof value === 'undefined') {
@@ -207,10 +214,17 @@ export class PlainBudget {
       }
     }
     if (group[0][0] === '=') {
+      // Apply group-level modifier if present
+      const modifier = this.modifiers.get(group[0])
+      if (modifier) {
+        value = modifier.type === 'multiply' ? value * modifier.value : value / modifier.value
+      }
+      value = this.#round(value)
       group[0][1] = value
       const id = this.ids.get(group[0])
       this.computed.set(id, value)
     } else {
+      value = this.#round(value)
       if (group.at(-1)[0] !== '=') {
         group.push(['=', value, ''])
       } else {
@@ -219,7 +233,7 @@ export class PlainBudget {
     }
   }
 
-  computeStats () {
+  computeStats() {
     this.stats = {}
     let credits = 0
     let debits = 0
@@ -233,16 +247,16 @@ export class PlainBudget {
         let [op, value] = group
         if (op === '+') {
           credits += value
-        } else if(op === '-') {
+        } else if (op === '-') {
           const id = this.ids.get(group)
           if (this.computed.has(id)) {
             const subgroup = this.index.get(id)
             for (const line of subgroup.slice(1)) {
               const subid = this.ids.get(line)
-              const multiplier = this.multipliers.get(line)
+              const modifier = this.modifiers.get(line)
               let value = line[1]
-              if (multiplier) {
-                value = value * multiplier
+              if (modifier) {
+                value = modifier.type === 'multiply' ? value * modifier.value : value / modifier.value
               }
               if (expenses.has(subid)) {
                 expenses.set(subid, expenses.get(subid) + value)
@@ -252,9 +266,9 @@ export class PlainBudget {
               debits += value
             }
           } else {
-            const multiplier = this.multipliers.get(group)
-            if (multiplier) {
-              value = value * multiplier
+            const modifier = this.modifiers.get(group)
+            if (modifier) {
+              value = modifier.type === 'multiply' ? value * modifier.value : value / modifier.value
             }
             if (expenses.has(id)) {
               expenses.set(id, expenses.get(id) + value)
@@ -270,7 +284,7 @@ export class PlainBudget {
     this.stats.distribution = []
     for (const [expense, amount] of expenses.entries()) {
       this.stats.distribution.push([
-        expense, 
+        expense,
         parseFloat((amount / credits).toFixed(5))
       ])
     }
@@ -287,7 +301,7 @@ export class PlainBudget {
     }
   }
 
-  render (blocksInput) {
+  render(blocksInput) {
     let output = ''
     const blocks = blocksInput ?? this.blocks
     for (const block of blocks.slice(0, -1)) {
@@ -295,7 +309,9 @@ export class PlainBudget {
         output += `${block}\n`
       } else {
         for (const line of block) {
-          output += `${line.filter(Boolean).join(' ')}\n`
+          const cleanLabel = this.#getCleanLabel(line)
+          const parts = [line[0], line[1], cleanLabel].filter(Boolean)
+          output += `${parts.join(' ')}\n`
         }
       }
     }
@@ -304,14 +320,19 @@ export class PlainBudget {
       output += `${lastBlock}`
     } else {
       for (const line of lastBlock.slice(0, -1)) {
-        output += `${line.filter(Boolean).join(' ')}\n`
+        const cleanLabel = this.#getCleanLabel(line)
+        const parts = [line[0], line[1], cleanLabel].filter(Boolean)
+        output += `${parts.join(' ')}\n`
       }
-      output += `${lastBlock.at(-1).filter(Boolean).join(' ')}`
+      const lastLine = lastBlock.at(-1)
+      const cleanLabel = this.#getCleanLabel(lastLine)
+      const parts = [lastLine[0], lastLine[1], cleanLabel].filter(Boolean)
+      output += `${parts.join(' ')}`
     }
     return output
   }
 
-  renderWithPadding (blocksInput) {
+  renderWithPadding(blocksInput) {
     const padding = this.padding !== null
       ? Math.max(this.padding, this.#getPadding())
       : 0
@@ -323,7 +344,9 @@ export class PlainBudget {
         output += `${block}\n`
       } else {
         for (const line of block) {
-          output += `${line[0]} ${line[1].toString().padStart(padding)} ${line[2] ?? ''}\n`
+          const value = line[1] !== null ? line[1].toString().padStart(padding) : ''.padStart(padding)
+          const cleanLabel = this.#getCleanLabel(line)
+          output += `${line[0]} ${value} ${cleanLabel ?? ''}\n`
         }
       }
     }
@@ -332,24 +355,34 @@ export class PlainBudget {
       output += `${lastBlock}`
     } else {
       for (const line of lastBlock.slice(0, -1)) {
-        output += `${line[0]} ${line[1].toString().padStart(padding)} ${line[2] ?? ''}\n`
+        const value = line[1] !== null ? line[1].toString().padStart(padding) : ''.padStart(padding)
+        const cleanLabel = this.#getCleanLabel(line)
+        output += `${line[0]} ${value} ${cleanLabel ?? ''}\n`
       }
       const lastLine = lastBlock.at(-1)
-      output += `${lastLine[0]} ${lastLine[1].toString().padStart(padding)} ${lastLine[2] ?? ''}\n`
+      const lastValue = lastLine[1] !== null ? lastLine[1].toString().padStart(padding) : ''.padStart(padding)
+      const cleanLabel = this.#getCleanLabel(lastLine)
+      output += `${lastLine[0]} ${lastValue} ${cleanLabel ?? ''}\n`
     }
     return output
   }
 
-  #processFlowEntry (op) {
-    const multiplier = this.multipliers.get(op)
+  #processFlowEntry(op) {
+    const modifier = this.modifiers.get(op)
     const id = this.ids.get(op)
     const computed = this.computed.get(id)
-    if (multiplier) {
+    if (modifier) {
+      let modifiedValue
       if (computed) {
-        op[1] = computed * multiplier
+        modifiedValue = modifier.type === 'multiply' ? computed * modifier.value : computed / modifier.value
+        modifiedValue = this.#round(modifiedValue)
+        op[1] = modifiedValue
         return op[1]
       } else {
-        return op[1] * multiplier
+        modifiedValue = modifier.type === 'multiply' ? op[1] * modifier.value : op[1] / modifier.value
+        modifiedValue = this.#round(modifiedValue)
+        op[1] = modifiedValue
+        return modifiedValue
       }
     }
     if (computed) {
@@ -358,10 +391,10 @@ export class PlainBudget {
     return op[1]
   }
 
-  #parseValue (line) {
+  #parseValue(line) {
     let value = line.slice(1).match(this.VALUE_REGEX) ?? null
     if (value) {
-      value = parseInt(value[1])
+      value = parseFloat(value[1])
       if (isNaN(value)) {
         value = null
       }
@@ -369,7 +402,7 @@ export class PlainBudget {
     return value
   }
 
-  #parseLine (line, raw) {
+  #parseLine(line, raw) {
     if (!line.match(this.COMPUTABLE_LINE_REGEX)) {
       return
     }
@@ -386,10 +419,10 @@ export class PlainBudget {
     }
     label = label ? label[1] : line.slice(1).trim()
     const parsed = [line[0], value, label]
-    const multiplier = this.#parseMultiplier(parsed[2])
-    if (multiplier) {
-      this.ids.set(parsed, multiplier[0])
-      this.multipliers.set(parsed, parseInt(multiplier[1]))
+    const modifier = this.#parseMultiplier(parsed[2])
+    if (modifier) {
+      this.ids.set(parsed, modifier[0])
+      this.modifiers.set(parsed, modifier[1])
     } else {
       this.ids.set(parsed, label)
     }
@@ -397,10 +430,14 @@ export class PlainBudget {
     return parsed
   }
 
-  #parseMultiplier (label) {
+  #parseMultiplier(label) {
     const m = label.trim().match(this.MULTIPLIER_REGEX)
     if (m) {
-      return [m[1], m[2]]
+      return [m[1], { type: 'multiply', value: parseFloat(m[2]) }]
+    }
+    const d = label.trim().match(this.DIVIDER_REGEX)
+    if (d) {
+      return [d[1], { type: 'divide', value: parseFloat(d[2]) }]
     }
   }
 
@@ -421,7 +458,7 @@ export class PlainBudget {
   #visitDependencyNode(node, dependencies, order, invalid, states) {
     const state = states.get(node) ?? 0
 
-    if (state === 1) { 
+    if (state === 1) {
       return true
     }
 
@@ -452,8 +489,8 @@ export class PlainBudget {
   }
 
 
-  #getPadding () {
-    let p = 3    
+  #getPadding() {
+    let p = 3
     for (const block of this.blocks) {
       if (!Array.isArray(block)) {
         continue
@@ -471,7 +508,22 @@ export class PlainBudget {
     return p + 1
   }
 
-  #sortDescending (a, b) {
+  #sortDescending(a, b) {
     return b[1] - a[1]
+  }
+
+  #round(value) {
+    // Round to 2 decimal places and remove trailing zeros
+    return Math.round(value * 100) / 100
+  }
+
+  #getCleanLabel(line) {
+    // If line has a modifier (operation), show just the clean label without the operation
+    const modifier = this.modifiers.get(line)
+    if (modifier) {
+      const id = this.ids.get(line)
+      return id
+    }
+    return line[2]
   }
 }

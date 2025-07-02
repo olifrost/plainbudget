@@ -1,0 +1,6 @@
+{
+    // Automatically open budget.pb when the workspace is opened
+    "files.autoOpen": [
+        "viewer/budget.pb"
+    ]
+}

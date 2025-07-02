@@ -1,0 +1,14 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "shell",
+			"label": "Launch PlainBudget Viewer",
+			"command": "./launch-viewer.sh",
+			"group": "build",
+			"isBackground": false,
+			"problemMatcher": [],
+			"runOn": "folderOpen"
+		}
+	]
+}

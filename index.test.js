@@ -19,12 +19,12 @@ test('computing', () => {
   pb.process()
   pb.computeStats()
   deepEqual(pb.stats.distribution, [
-    [ 'Car payment', 0.34014 ],
-    [ 'House payment', 0.22676 ],
-    [ 'Rent', 0.11338 ],
-    [ 'Bar', 0.05669 ],
-    [ 'Utilities', 0.05669 ],
-    [ 'Internet', 0.02268 ]
+    ['Car payment', 0.34014],
+    ['House payment', 0.22676],
+    ['Rent', 0.11338],
+    ['Bar', 0.05669],
+    ['Utilities', 0.05669],
+    ['Internet', 0.02268]
   ])
   deepEqual(pb.stats.projections, {
     savings: 1620,
@@ -75,21 +75,21 @@ test('multiplier', () => {
   pb.process()
   pb.computeStats()
   deepEqual(pb.stats.distribution, [
-    [ 'Rent', 0.33333 ],
-    [ 'Utilities', 0.16667 ],
-    [ 'Leisure', 0.08333 ],
-    [ 'Coffee', 0.02 ],
-    [ 'Milk', 0.02 ],
-    [ 'Cereal', 0.02 ],
-    [ 'Foobar', 0.01667 ]
+    ['Rent', 0.33333],
+    ['Coffee', 0.24],
+    ['Milk', 0.24],
+    ['Utilities', 0.16667],
+    ['Cereal', 0.12],
+    ['Leisure', 0.08333],
+    ['Foobar', 0.03333]
   ])
   deepEqual(pb.stats.projections, {
-    savings: 2040,
-    sixmonths: 14280,
-    oneyear: 26520,
-    threeyears: 75480,
-    fiveyears: 124440,
-    tenyears: 246840
+    savings: -1300,
+    sixmonths: -9100,
+    oneyear: -16900,
+    threeyears: -48100,
+    fiveyears: -79300,
+    tenyears: -157300
   })
   ok(output === pb.renderWithPadding())
 })
@@ -136,7 +136,15 @@ test('dedupe', () => {
   processingTest('dedupe', true)
 })
 
-function loadFixture (...fixtureInput) {
+test('division', () => {
+  processingTest('division', true)
+})
+
+test('decimals', () => {
+  processingTest('decimals', true)
+})
+
+function loadFixture(...fixtureInput) {
   const fixtureRoot = join(root, 'fixtures')
   const fixture = join(fixtureRoot, ...fixtureInput)
   const input = readFileSync(`${fixture}.input`, 'utf8')
@@ -148,7 +156,7 @@ function processingTest(fixture, padding = false) {
   const { input, output } = loadFixture(fixture)
   const pb = new PlainBudget(input)
   pb.process()
-  const rendered = padding 
+  const rendered = padding
     ? pb.renderWithPadding()
     : pb.render()
   ok(output === rendered)

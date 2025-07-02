@@ -7,7 +7,11 @@
   },
   "scripts": {
     "test": "node --test",
-    "lint": "oxlint ."
+    "lint": "oxlint .",
+    "dev": "node executable.js viewer/budget.pb",
+    "dev:stats": "node executable.js --stats viewer/budget.pb",
+    "process": "node process-all.js",
+    "watch": "node watch.js"
   },
   "files": [
     "index.js",
