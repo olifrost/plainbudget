@@ -7,6 +7,10 @@ export default defineConfig({
     ],
     server: {
         open: true,
-        host: true
+        host: true,
+        watch: {
+            // Include .pb files in the watch list
+            ignored: ['!**/budget.pb', '!**/*.pb']
+        }
     }
 })

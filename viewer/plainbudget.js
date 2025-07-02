@@ -251,32 +251,27 @@ export class PlainBudget {
                 } else if (op === '-') {
                     const id = this.ids.get(group)
                     if (this.computed.has(id)) {
-                        const subgroup = this.index.get(id)
-                        for (const line of subgroup.slice(1)) {
-                            const subid = this.ids.get(line)
-                            const modifier = this.modifiers.get(line)
-                            let value = line[1]
-                            if (modifier) {
-                                value = modifier.type === 'multiply' ? value * modifier.value : value / modifier.value
-                            }
-                            if (expenses.has(subid)) {
-                                expenses.set(subid, expenses.get(subid) + value)
-                            } else {
-                                expenses.set(subid, value)
-                            }
-                            debits += value
+                        // This is a reference to a computed group
+                        const computedValue = this.computed.get(id)
+                        if (expenses.has(id)) {
+                            expenses.set(id, expenses.get(id) + computedValue)
+                        } else {
+                            expenses.set(id, computedValue)
                         }
+                        debits += computedValue
                     } else {
+                        // This is a direct expense line
                         const modifier = this.modifiers.get(group)
+                        let finalValue = value
                         if (modifier) {
-                            value = modifier.type === 'multiply' ? value * modifier.value : value / modifier.value
+                            finalValue = modifier.type === 'multiply' ? value * modifier.value : value / modifier.value
                         }
                         if (expenses.has(id)) {
-                            expenses.set(id, expenses.get(id) + value)
+                            expenses.set(id, expenses.get(id) + finalValue)
                         } else {
-                            expenses.set(id, value)
+                            expenses.set(id, finalValue)
                         }
-                        debits += value
+                        debits += finalValue
                     }
                 }
             }

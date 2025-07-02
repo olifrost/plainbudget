@@ -21,6 +21,7 @@ import {
     Trash2,
     Package,
     CircleDollarSign,
+    Beer,
     createIcons
 } from 'lucide'
 
@@ -48,14 +49,14 @@ class BudgetViewer {
             ['salary', 'DollarSign'],
             ['wage', 'DollarSign'],
             ['money', 'CircleDollarSign'],
-            ['royalties', 'DollarSign'],
-            ['spotify', 'DollarSign'],
-            ['patreon', 'DollarSign'],
+            ['royalties', 'Music'],
+            ['spotify', 'Music'],
+            ['patreon', 'Heart'],
             ['kofi', 'Coffee'],
-            ['bandcamp', 'DollarSign'],
+            ['bandcamp', 'Music'],
 
             // Personal names/people
-            ['ellen', 'Users'],
+            ['people', 'Users'],
 
             // Business
             ['business', 'Briefcase'],
@@ -82,6 +83,8 @@ class BudgetViewer {
             ['cloud', 'Wifi'],
             ['netflix', 'Tv'],
             ['streaming', 'Tv'],
+            ['beer', 'beer'],
+            ['Pub', 'beer'],
 
             // Food & Groceries
             ['food', 'Utensils'],
@@ -89,7 +92,6 @@ class BudgetViewer {
             ['sundries', 'ShoppingCart'],
             ['huel', 'Package'],
             ['milk', 'Package'],
-            ['corner', 'ShoppingCart'],
             ['shop', 'ShoppingCart'],
 
             // Personal Care
@@ -471,7 +473,8 @@ class BudgetViewer {
             'Film': '<rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line><circle cx="12" cy="10" r="3"></circle>',
             'BookOpen': '<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>',
             'Gift': '<polyline points="20,12 20,22 4,22 4,12"></polyline><rect x="2" y="7" width="20" height="5"></rect><line x1="12" y1="22" x2="12" y2="7"></line><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"></path><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"></path>',
-            'Wrench': '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>'
+            'Wrench': '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>',
+            'Music': '<path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle>'
         }
 
         return paths[iconName] || paths['Circle'] // Default fallback is a simple circle
