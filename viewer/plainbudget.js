@@ -473,19 +473,21 @@ export class PlainBudget {
 
     // Convert time intervals to monthly equivalents for calculation
     #convertIntervalToMonthly(num, unit) {
-        const conversions = {
-            'day': 30.44,    // average days per month
-            'days': 30.44,
-            'week': 4.33,    // average weeks per month
-            'weeks': 4.33,
-            'month': 1,
-            'months': 1,
-            'year': 1 / 12,    // 1 year = 1/12 of monthly
-            'years': 1 / 12
+        // Convert interval to how many times it occurs per year, then to monthly
+        const periodsPerYear = {
+            'day': 365.25 / num,     // if every N days
+            'days': 365.25 / num,
+            'week': 52.18 / num,     // if every N weeks
+            'weeks': 52.18 / num,
+            'month': 12 / num,       // if every N months  
+            'months': 12 / num,
+            'year': 1 / num,         // if every N years
+            'years': 1 / num
         }
 
-        const factor = conversions[unit] || 1
-        return num / factor  // how many months this interval represents
+        // Get how many times per year this occurs, then divide by 12 for monthly
+        const yearlyOccurrences = periodsPerYear[unit] || 1
+        return yearlyOccurrences / 12
     }
 
     #resolveDependencies(dependencies) {
