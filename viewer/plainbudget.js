@@ -2,6 +2,7 @@
 export class PlainBudget {
     MULTIPLIER_REGEX = /^(.*?)\s+x\s+(\d+(?:\.\d+)?)$/
     DIVIDER_REGEX = /^(.*?)\s+\/\s+(\d+(?:\.\d+)?)$/
+    INTERVAL_REGEX = /^(.*?)\s+@(\d+)(weeks?|months?|years?|days?)(?:\s+x(\d+(?:\.\d+)?))?$/
     COMPUTABLE_LINE_REGEX = /^[=\-~+x]\s+/
     RESULT_LINE_REGEX = /^=\s+(\d+(?:\.\d+)?)\s*$/
     VALUE_REGEX = /^\s+(\d+(?:\.\d+)?)/
@@ -369,17 +370,24 @@ export class PlainBudget {
         const computed = this.computed.get(id)
         if (modifier) {
             let modifiedValue
-            if (computed) {
-                modifiedValue = modifier.type === 'multiply' ? computed * modifier.value : computed / modifier.value
-                modifiedValue = this.#round(modifiedValue)
-                op[1] = modifiedValue
-                return op[1]
-            } else {
-                modifiedValue = modifier.type === 'multiply' ? op[1] * modifier.value : op[1] / modifier.value
-                modifiedValue = this.#round(modifiedValue)
-                op[1] = modifiedValue
-                return modifiedValue
+            const baseValue = computed || op[1]
+
+            if (modifier.type === 'multiply') {
+                modifiedValue = baseValue * modifier.value
+            } else if (modifier.type === 'divide') {
+                modifiedValue = baseValue / modifier.value
+            } else if (modifier.type === 'divide_multiply') {
+                // Handle combined operations: / n x m
+                modifiedValue = (baseValue / modifier.divisor) * modifier.multiplier
+            } else if (modifier.type === 'interval') {
+                modifiedValue = baseValue * modifier.intervalValue
+            } else if (modifier.type === 'interval_multiply') {
+                modifiedValue = baseValue * modifier.intervalValue * modifier.multiplier
             }
+
+            modifiedValue = this.#round(modifiedValue)
+            op[1] = modifiedValue
+            return modifiedValue
         }
         if (computed) {
             op[1] = computed
@@ -427,6 +435,17 @@ export class PlainBudget {
     }
 
     #parseMultiplier(label) {
+        // Check for combined operations first: / n x m
+        const combined = label.trim().match(/^(.*?)\s+\/\s+(\d+(?:\.\d+)?)\s+x\s+(\d+(?:\.\d+)?)$/)
+        if (combined) {
+            const [, cleanLabel, divisor, multiplier] = combined
+            return [cleanLabel, {
+                type: 'divide_multiply',
+                divisor: parseFloat(divisor),
+                multiplier: parseFloat(multiplier)
+            }]
+        }
+
         const m = label.trim().match(this.MULTIPLIER_REGEX)
         if (m) {
             return [m[1], { type: 'multiply', value: parseFloat(m[2]) }]
@@ -435,6 +454,38 @@ export class PlainBudget {
         if (d) {
             return [d[1], { type: 'divide', value: parseFloat(d[2]) }]
         }
+
+        // Enhanced: Support time-based intervals like @13weeks, @3months
+        const i = label.trim().match(this.INTERVAL_REGEX)
+        if (i) {
+            const [, cleanLabel, intervalNum, intervalUnit, multiplier] = i
+            const intervalValue = this.#convertIntervalToMonthly(parseFloat(intervalNum), intervalUnit)
+
+            if (multiplier) {
+                // Support @13weeks x4 syntax
+                return [cleanLabel, { type: 'interval_multiply', intervalValue, multiplier: parseFloat(multiplier) }]
+            } else {
+                // Simple @13weeks syntax (convert to monthly equivalent)
+                return [cleanLabel, { type: 'interval', intervalValue }]
+            }
+        }
+    }
+
+    // Convert time intervals to monthly equivalents for calculation
+    #convertIntervalToMonthly(num, unit) {
+        const conversions = {
+            'day': 30.44,    // average days per month
+            'days': 30.44,
+            'week': 4.33,    // average weeks per month
+            'weeks': 4.33,
+            'month': 1,
+            'months': 1,
+            'year': 1 / 12,    // 1 year = 1/12 of monthly
+            'years': 1 / 12
+        }
+
+        const factor = conversions[unit] || 1
+        return num / factor  // how many months this interval represents
     }
 
     #resolveDependencies(dependencies) {
