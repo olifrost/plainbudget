@@ -27,8 +27,10 @@ import {
 
 // Tauri imports (check if we're running in Tauri)
 let tauriAPI = null;
+let isInTauri = false;
 if (window.__TAURI__) {
     tauriAPI = window.__TAURI__;
+    isInTauri = true;
 }
 
 // Remove sampleBudget definition, always load local budget by default
@@ -37,9 +39,12 @@ class BudgetViewer {
     constructor() {
         this.elements = {
             fileInput: document.getElementById('fileInput'),
-            loadBudget: document.getElementById('loadBudget'),
-            loadSample: document.getElementById('loadSample'),
-            toggleStats: document.getElementById('toggleStats'),
+            configButton: document.getElementById('configButton'),
+            configModal: document.getElementById('configModal'),
+            closeModal: document.getElementById('closeModal'),
+            defaultPath: document.getElementById('defaultPath'),
+            loadFromPath: document.getElementById('loadFromPath'),
+            pathStatus: document.getElementById('pathStatus'),
             budgetOutput: document.getElementById('budgetOutput'),
             statsContainer: document.getElementById('statsContainer'),
             statsOutput: document.getElementById('statsOutput')
@@ -47,6 +52,12 @@ class BudgetViewer {
 
         this.currentBudget = null
         this.statsVisible = true // Show stats by default
+        
+        // Default budget file path - can be configured
+        this.defaultBudgetPath = './budget.pb'
+        
+        // Load saved path from localStorage if available
+        this.loadSavedConfiguration()
 
         // Icon mapping system - store icon names instead of components
         this.iconMap = new Map([
@@ -152,18 +163,140 @@ class BudgetViewer {
         this.init()
     }
 
+    loadSavedConfiguration() {
+        // Try to load saved path from localStorage
+        const savedPath = localStorage.getItem('plainbudget-default-path')
+        if (savedPath) {
+            this.defaultBudgetPath = savedPath
+            this.elements.defaultPath.value = savedPath
+        } else {
+            this.elements.defaultPath.value = this.defaultBudgetPath
+        }
+    }
+
+    openModal() {
+        this.elements.configModal.classList.remove('hidden')
+        // Focus on the input field
+        setTimeout(() => {
+            this.elements.defaultPath.focus()
+        }, 100)
+    }
+
+    closeModal() {
+        this.elements.configModal.classList.add('hidden')
+    }
+
+    saveConfiguration() {
+        const newPath = this.elements.defaultPath.value.trim()
+        if (newPath) {
+            this.defaultBudgetPath = newPath
+            localStorage.setItem('plainbudget-default-path', newPath)
+        }
+    }
+
     init() {
         this.elements.fileInput.addEventListener('change', this.handleFileLoad.bind(this))
-        this.elements.loadBudget.addEventListener('click', this.loadLocalBudget.bind(this))
-        this.elements.loadSample.addEventListener('click', this.loadSample.bind(this))
-        this.elements.toggleStats.addEventListener('click', this.toggleStats.bind(this))
+        this.elements.loadFromPath.addEventListener('click', this.loadFromCustomPath.bind(this))
+        
+        // Modal controls
+        this.elements.configButton.addEventListener('click', this.openModal.bind(this))
+        this.elements.closeModal.addEventListener('click', this.closeModal.bind(this))
+        this.elements.configModal.addEventListener('click', (e) => {
+            if (e.target === this.elements.configModal) {
+                this.closeModal()
+            }
+        })
+        
+        // Auto-save configuration when path changes
+        this.elements.defaultPath.addEventListener('change', this.saveConfiguration.bind(this))
+        this.elements.defaultPath.addEventListener('blur', this.saveConfiguration.bind(this))
 
-        // Always load local budget.pb on startup
-        this.loadLocalBudget()
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !this.elements.configModal.classList.contains('hidden')) {
+                this.closeModal()
+            }
+        })
+
+        // Always try to load the default budget file on startup
+        this.loadDefaultBudget()
+        
         // Show stats section by default
         this.elements.statsContainer.classList.remove('hidden')
         this.elements.statsContainer.classList.add('xl:block')
-        this.elements.toggleStats.textContent = 'Hide Stats'
+    }
+
+    showPathStatus(success, message = '') {
+        const statusEl = this.elements.pathStatus
+        if (success) {
+            statusEl.innerHTML = `
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-green-800 bg-green-100">
+                    ✓ Loaded successfully
+                </span>
+            `
+            statusEl.classList.remove('hidden')
+            // Hide after 3 seconds
+            setTimeout(() => {
+                statusEl.classList.add('hidden')
+            }, 3000)
+        } else {
+            statusEl.innerHTML = `
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-red-800 bg-red-100">
+                    ✗ Failed to load
+                </span>
+            `
+            statusEl.classList.remove('hidden')
+            // Hide after 5 seconds for errors
+            setTimeout(() => {
+                statusEl.classList.add('hidden')
+            }, 5000)
+        }
+    }
+
+    async loadFromCustomPath() {
+        // Save the current configuration first
+        this.saveConfiguration()
+        
+        // Then try to load from the configured path
+        await this.loadDefaultBudget()
+        
+        // Close modal on successful load (status will be shown briefly)
+        setTimeout(() => {
+            this.closeModal()
+        }, 1500)
+    }
+
+    async loadDefaultBudget() {
+        try {
+            let content;
+            
+            if (isInTauri) {
+                // Use Tauri filesystem API
+                const { readTextFile } = tauriAPI.fs;
+                content = await readTextFile(this.defaultBudgetPath);
+            } else {
+                // In web mode, we can only fetch files from the web server
+                // If the path looks like a web path, try to fetch it
+                let fetchPath = this.defaultBudgetPath;
+                if (!fetchPath.startsWith('/') && !fetchPath.startsWith('http')) {
+                    // Convert relative paths to web paths
+                    fetchPath = '/' + fetchPath.replace('./', '');
+                }
+                
+                const response = await fetch(fetchPath)
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`)
+                }
+                content = await response.text()
+            }
+            
+            this.processBudget(content)
+            this.showPathStatus(true)
+        } catch (error) {
+            console.error('Could not load default budget file:', error)
+            this.showPathStatus(false)
+            this.showError(`Could not load budget file: "${this.defaultBudgetPath}". ${isInTauri ? 'Please check the file path exists.' : 'In web mode, only files served by the web server can be loaded.'} You can use the file picker to load any budget file.`)
+        }
     }
 
     async loadLocalBudget() {
@@ -176,8 +309,7 @@ class BudgetViewer {
             this.processBudget(content)
         } catch (error) {
             console.error('Could not load local budget file:', error)
-            this.showError('Could not load budget.pb file. Using sample data instead.')
-            this.loadSample()
+            this.showError('Could not load budget.pb file. Please use the file picker to load a budget.')
         }
     }
 
@@ -193,63 +325,15 @@ class BudgetViewer {
         }
     }
 
-    loadSample() {
-        // Use a generic, non-sensitive sample budget
-        const sampleBudget = `= Income x 1.0
-- 1000 Main Job
-- 500 Side Hustle
-- 100 Other
-
-= Savings
-- 200 Emergency Fund
-- 100 Retirement
-
-= Expenses / 2
-- 100 Utilities
-- 50 Water
-- 200 Rent
-- 20 Insurance
-- 50 Groceries
-- 30 Internet
-- 10 Streaming
-
-= Personal
-- 100 Hobbies
-- 20 Haircuts
-
-= Joint / 2
-- 50 Pet
-- 40 Food
-- 60 Misc
-
-= Business x 0.8
-- 30 Office
-- 10 Phone
-- 100 Salary
-- 40 Pension
-
-+ Totals
-+ Income
-+ Savings
-- Expenses
-- Joint
-- Business
-- Personal`
-        this.processBudget(sampleBudget)
-    }
-
     processBudget(source) {
         try {
             this.currentBudget = new PlainBudget(source)
             const result = this.currentBudget.process()
             this.renderBudgetTable(this.currentBudget.blocks)
 
-            // Compute stats for later use
+            // Compute stats and always render them
             this.currentBudget.computeStats()
-
-            if (this.statsVisible) {
-                this.renderStats()
-            }
+            this.renderStats()
         } catch (error) {
             this.showError('Error processing budget: ' + error.message)
         }
@@ -589,24 +673,6 @@ class BudgetViewer {
             })
 
             container.appendChild(distributionSection)
-        }
-    }
-
-    toggleStats() {
-        this.statsVisible = !this.statsVisible
-        const container = this.elements.statsContainer
-
-        if (this.statsVisible) {
-            container.classList.remove('hidden')
-            container.classList.add('xl:block')
-            this.elements.toggleStats.textContent = 'Hide Stats'
-        } else {
-            container.classList.add('hidden')
-            this.elements.toggleStats.textContent = 'Show Stats'
-        }
-
-        if (this.statsVisible && this.currentBudget) {
-            this.renderStats()
         }
     }
 

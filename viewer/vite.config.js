@@ -1,10 +1,30 @@
 import { defineConfig } from 'vite'
 import tailwindcss from '@tailwindcss/vite'
+import { readFileSync } from 'fs'
+import { join } from 'path'
 
-// Custom plugin to watch .pb files
-const pbWatcher = {
-    name: 'pb-watcher',
+// Custom plugin to serve .pb files and watch them for changes
+const pbPlugin = {
+    name: 'pb-plugin',
     configureServer(server) {
+        // Serve .pb files
+        server.middlewares.use('/', (req, res, next) => {
+            if (req.url?.endsWith('.pb')) {
+                try {
+                    const filePath = join(process.cwd(), req.url.substring(1))
+                    const content = readFileSync(filePath, 'utf-8')
+                    res.setHeader('Content-Type', 'text/plain')
+                    res.end(content)
+                } catch (error) {
+                    res.statusCode = 404
+                    res.end('File not found')
+                }
+                return
+            }
+            next()
+        })
+        
+        // Watch for .pb file changes and trigger reload
         server.ws.on('pb-update', () => {
             server.ws.send({
                 type: 'full-reload'
@@ -15,23 +35,14 @@ const pbWatcher = {
         // Add .pb files to the watch list
         this.addWatchFile('budget.pb')
         this.addWatchFile('subscriptions.pb')
-    },
-    load(id) {
-        if (id.endsWith('.pb')) {
-            // Force a reload when .pb files change
-            this.emitFile({
-                type: 'asset',
-                fileName: id,
-                source: ''
-            })
-        }
+        this.addWatchFile('income.pb')
     }
 }
 
 export default defineConfig({
     plugins: [
         tailwindcss(),
-        pbWatcher
+        pbPlugin
     ],
     build: {
         outDir: 'dist',

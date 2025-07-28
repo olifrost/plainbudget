@@ -4,3 +4,4 @@ budgets
 output
 viewer/subscriptions.pb
 viewer/budget.pb
+viewer/*.pb
