@@ -6,8 +6,8 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>plainbudget</title>
-  <script type="module" crossorigin src="/assets/index-D6EZQcHK.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/index-Dub38xAW.css">
+  <script type="module" crossorigin src="/assets/index-DE4btEcY.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-CjeZadBH.css">
 </head>
 
 <body class="h-full bg-gradient-to-br from-slate-50 to-blue-50 font-sans antialiased">
@@ -31,10 +31,21 @@
                     <div class="flex flex-wrap items-center gap-4">
                         <input type="file" id="fileInput" accept=".pb,.txt"
                             class="block w-full sm:w-auto text-sm text-gray-900 border border-gray-300 rounded-xl cursor-pointer bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent file:mr-4 file:py-3 file:px-6 file:rounded-l-xl file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition-all duration-200" />
-                        
-                        <span class="text-sm text-gray-600">
-                            Choose a .pb file to load, or edit the default budget.pb
+
+                        <span class="text-sm text-gray-600 flex-1">
+                            Choose a .pb file to load
                         </span>
+
+                        <button id="configButton"
+                            class="inline-flex items-center px-4 py-3 border border-gray-300 text-sm font-medium rounded-xl text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 shadow-md hover:shadow-lg"
+                            title="Configure default budget path">
+                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -66,6 +77,50 @@
             </div>
         </main>
     </div>
+
+    <!-- Configuration Modal -->
+    <div id="configModal" class="fixed inset-0 bg-black bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-2xl bg-white">
+            <div class="mt-3">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-gray-900">Configuration</h3>
+                    <button id="closeModal" class="text-gray-400 hover:text-gray-600">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="mb-4">
+                    <label for="defaultPath" class="block text-sm font-medium text-gray-700 mb-2">
+                        Default Budget File Path
+                    </label>
+                    <input type="text" id="defaultPath" placeholder="./budget.pb or /full/path/to/your/budget.pb"
+                        class="block w-full px-4 py-3 text-sm text-gray-900 border border-gray-300 rounded-xl bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" />
+                </div>
+
+                <div class="flex items-center justify-between mb-4">
+                    <button id="loadFromPath"
+                        class="inline-flex items-center px-6 py-3 border border-transparent text-sm font-semibold rounded-xl text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 shadow-lg hover:shadow-xl">
+                        Load Budget
+                    </button>
+                    <div id="pathStatus" class="hidden text-sm">
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-green-800 bg-green-100">
+                            ✓ Loaded successfully
+                        </span>
+                    </div>
+                </div>
+
+                <p class="text-xs text-gray-500">
+                    <strong>Web mode:</strong> Use paths like './budget.pb' for files in the server directory<br>
+                    <strong>Desktop app:</strong> Use full paths like '/Users/yourname/Documents/budget.pb' or relative
+                    paths
+                </p>
+            </div>
+        </div>
+    </div>
+
     <footer class="bg-white border-t border-gray-200 py-6 mt-16 text-center text-gray-500 text-sm">
         <span>
             Powered by <a href="https://github.com/galvez/plainbudget" target="_blank" rel="noopener noreferrer"

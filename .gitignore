@@ -4,4 +4,6 @@ budgets
 output
 viewer/subscriptions.pb
 viewer/budget.pb
-viewer/*.pb
+viewer/income.pb
+# Allow sample budget file for deployment
+!viewer/sample-budget.pb

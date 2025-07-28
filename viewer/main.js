@@ -52,10 +52,10 @@ class BudgetViewer {
 
         this.currentBudget = null
         this.statsVisible = true // Show stats by default
-        
+
         // Default budget file path - can be configured
-        this.defaultBudgetPath = './budget.pb'
-        
+        this.defaultBudgetPath = './sample-budget.pb'
+
         // Load saved path from localStorage if available
         this.loadSavedConfiguration()
 
@@ -197,7 +197,7 @@ class BudgetViewer {
     init() {
         this.elements.fileInput.addEventListener('change', this.handleFileLoad.bind(this))
         this.elements.loadFromPath.addEventListener('click', this.loadFromCustomPath.bind(this))
-        
+
         // Modal controls
         this.elements.configButton.addEventListener('click', this.openModal.bind(this))
         this.elements.closeModal.addEventListener('click', this.closeModal.bind(this))
@@ -206,7 +206,7 @@ class BudgetViewer {
                 this.closeModal()
             }
         })
-        
+
         // Auto-save configuration when path changes
         this.elements.defaultPath.addEventListener('change', this.saveConfiguration.bind(this))
         this.elements.defaultPath.addEventListener('blur', this.saveConfiguration.bind(this))
@@ -220,7 +220,7 @@ class BudgetViewer {
 
         // Always try to load the default budget file on startup
         this.loadDefaultBudget()
-        
+
         // Show stats section by default
         this.elements.statsContainer.classList.remove('hidden')
         this.elements.statsContainer.classList.add('xl:block')
@@ -256,10 +256,10 @@ class BudgetViewer {
     async loadFromCustomPath() {
         // Save the current configuration first
         this.saveConfiguration()
-        
+
         // Then try to load from the configured path
         await this.loadDefaultBudget()
-        
+
         // Close modal on successful load (status will be shown briefly)
         setTimeout(() => {
             this.closeModal()
@@ -269,7 +269,7 @@ class BudgetViewer {
     async loadDefaultBudget() {
         try {
             let content;
-            
+
             if (isInTauri) {
                 // Use Tauri filesystem API
                 const { readTextFile } = tauriAPI.fs;
@@ -282,14 +282,14 @@ class BudgetViewer {
                     // Convert relative paths to web paths
                     fetchPath = '/' + fetchPath.replace('./', '');
                 }
-                
+
                 const response = await fetch(fetchPath)
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`)
                 }
                 content = await response.text()
             }
-            
+
             this.processBudget(content)
             this.showPathStatus(true)
         } catch (error) {

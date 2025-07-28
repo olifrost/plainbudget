@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite'
 import tailwindcss from '@tailwindcss/vite'
-import { readFileSync } from 'fs'
+import { readFileSync, copyFileSync } from 'fs'
 import { join } from 'path'
 
 // Custom plugin to serve .pb files and watch them for changes
@@ -23,7 +23,7 @@ const pbPlugin = {
             }
             next()
         })
-        
+
         // Watch for .pb file changes and trigger reload
         server.ws.on('pb-update', () => {
             server.ws.send({
@@ -33,9 +33,19 @@ const pbPlugin = {
     },
     buildStart() {
         // Add .pb files to the watch list
+        this.addWatchFile('sample-budget.pb')
         this.addWatchFile('budget.pb')
         this.addWatchFile('subscriptions.pb')
         this.addWatchFile('income.pb')
+    },
+    writeBundle() {
+        // Copy sample budget file to dist folder after build
+        try {
+            copyFileSync('sample-budget.pb', 'dist/sample-budget.pb')
+            console.log('✓ Copied sample-budget.pb to dist/')
+        } catch (error) {
+            console.warn('Could not copy sample-budget.pb:', error.message)
+        }
     }
 }
 
@@ -46,8 +56,14 @@ export default defineConfig({
     ],
     build: {
         outDir: 'dist',
-        emptyOutDir: true
+        emptyOutDir: true,
+        rollupOptions: {
+            external: [],
+            output: {}
+        },
+        copyPublicDir: false
     },
+    publicDir: false, // We'll handle .pb files manually
     server: {
         open: false, // Don't auto-open browser since we're using Tauri
         host: true,
