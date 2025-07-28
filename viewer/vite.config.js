@@ -50,6 +50,7 @@ const pbPlugin = {
 }
 
 export default defineConfig({
+    base: './', // Use relative paths for GitHub Pages
     plugins: [
         tailwindcss(),
         pbPlugin
