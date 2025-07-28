@@ -1,7 +1,7 @@
 = Income
 - 3000 Main Job
 - 500 Side Project
-- 100 Other Income
+- 50 Other Income
 
 = Savings / 12
 - 2400 Emergency Fund
